@@ -45,6 +45,7 @@ export const useAuth = () => {
     if (foundUser && password === 'demo123') {
       setUser(foundUser);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(foundUser));
+      window.location.reload();
       return true;
     }
     
@@ -54,6 +55,7 @@ export const useAuth = () => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem(STORAGE_KEY);
+    window.location.reload();
   };
 
   return {
