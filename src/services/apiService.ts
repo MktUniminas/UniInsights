@@ -15,7 +15,12 @@ class ApiService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+    // Use relative URL in production (Vercel) and localhost in development
+    if (import.meta.env.PROD) {
+      this.baseUrl = '/api'; // Relative URL for production
+    } else {
+      this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+    }
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
