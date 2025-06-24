@@ -4,6 +4,7 @@ export interface User {
   email: string;
   role: 'admin' | 'user';
   consultantId?: string;
+  consultantEmail?: string; // Email para buscar no CRM
 }
 
 export interface Deal {
@@ -12,6 +13,7 @@ export interface Deal {
   value: number;
   stage: 'created' | 'won' | 'lost' | 'in_progress';
   consultantId: string;
+  consultantEmail?: string; // Email do consultor
   campaignId: string;
   createdAt: string;
   closedAt?: string;
@@ -42,6 +44,8 @@ export interface Campaign {
   totalLeads: number;
   totalInvestment: number;
   totalDeals: number; // Quantidade de negócios desta campanha
+  wonDeals?: number; // Negócios ganhos desta campanha
+  totalRevenue?: number; // Receita total desta campanha
 }
 
 export interface KPIData {
@@ -109,6 +113,80 @@ export interface LossAnalysis {
   count: number;
   percentage: number;
   totalValue: number;
+}
+
+// RD Station specific types
+export interface RDStationDeal {
+  _id: string;
+  id: string;
+  name: string;
+  amount_montly: number;
+  amount_unique: number;
+  amount_total: number;
+  prediction_date?: string;
+  markup: string;
+  last_activity_at?: string;
+  interactions: number;
+  created_at: string;
+  updated_at: string;
+  rating: number;
+  win?: boolean;
+  closed_at?: string;
+  user: {
+    _id: string;
+    id: string;
+    name: string;
+    nickname: string;
+    email: string;
+  };
+  deal_stage: {
+    _id: string;
+    id: string;
+    name: string;
+    nickname: string;
+    created_at: string;
+    updated_at: string;
+  };
+  campaign?: {
+    _id: string;
+    id: string;
+    name: string;
+    created_at: string;
+    updated_at: string;
+  };
+  deal_source?: {
+    _id: string;
+    id: string;
+    name: string;
+    created_at: string;
+    updated_at: string;
+  };
+  contacts: Array<{
+    name: string;
+    title?: string;
+    emails: Array<{ email: string }>;
+    phones: Array<{ phone: string; type?: string }>;
+  }>;
+  deal_custom_fields: Array<{
+    value: any;
+    custom_field_id: string;
+    custom_field: {
+      _id: string;
+      id: string;
+      label: string;
+      type: string;
+      order: number;
+    };
+  }>;
+  deal_products: Array<{
+    _id: string;
+    id: string;
+    product_id: string;
+    name: string;
+    price: number;
+    amount: number;
+    total: number;
+  }>;
 }
 
 export type AdminPage = 'dashboard' | 'consultants' | 'campaigns' | 'analytics' | 'settings';

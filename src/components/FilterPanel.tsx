@@ -18,46 +18,64 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
   isAdmin
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  // Local state for temporary filter values (before applying)
+  const [tempFilters, setTempFilters] = useState<FilterState>(filters);
 
   const handleDateChange = (field: 'start' | 'end', value: string) => {
-    onFiltersChange({
-      ...filters,
+    setTempFilters(prev => ({
+      ...prev,
       dateRange: {
-        ...filters.dateRange,
+        ...prev.dateRange,
         [field]: value
       }
-    });
+    }));
+    // DO NOT auto-apply filters here
   };
 
   const handleConsultantToggle = (consultantId: string) => {
-    const newConsultantIds = filters.consultantIds.includes(consultantId)
-      ? filters.consultantIds.filter(id => id !== consultantId)
-      : [...filters.consultantIds, consultantId];
+    const newConsultantIds = tempFilters.consultantIds.includes(consultantId)
+      ? tempFilters.consultantIds.filter(id => id !== consultantId)
+      : [...tempFilters.consultantIds, consultantId];
     
-    onFiltersChange({
-      ...filters,
+    setTempFilters(prev => ({
+      ...prev,
       consultantIds: newConsultantIds
-    });
+    }));
+    // DO NOT auto-apply filters here
   };
 
   const handleCampaignToggle = (campaignId: string) => {
-    const newCampaignIds = filters.campaignIds.includes(campaignId)
-      ? filters.campaignIds.filter(id => id !== campaignId)
-      : [...filters.campaignIds, campaignId];
+    const newCampaignIds = tempFilters.campaignIds.includes(campaignId)
+      ? tempFilters.campaignIds.filter(id => id !== campaignId)
+      : [...tempFilters.campaignIds, campaignId];
     
-    onFiltersChange({
-      ...filters,
+    setTempFilters(prev => ({
+      ...prev,
       campaignIds: newCampaignIds
-    });
+    }));
+    // DO NOT auto-apply filters here
+  };
+
+  const applyFilters = () => {
+    console.log('Applying filters:', tempFilters);
+    onFiltersChange(tempFilters);
+    setIsOpen(false);
   };
 
   const clearFilters = () => {
-    onFiltersChange({
+    const clearedFilters = {
       dateRange: { start: '', end: '' },
       consultantIds: [],
       campaignIds: [],
       costPerLead: undefined
-    });
+    };
+    setTempFilters(clearedFilters);
+    onFiltersChange(clearedFilters);
+  };
+
+  const cancelChanges = () => {
+    setTempFilters(filters); // Reset to current applied filters
+    setIsOpen(false);
   };
 
   const activeFiltersCount = 
@@ -66,6 +84,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     filters.consultantIds.length +
     filters.campaignIds.length +
     (filters.costPerLead ? 1 : 0);
+
+  const hasChanges = JSON.stringify(tempFilters) !== JSON.stringify(filters);
 
   return (
     <div className="relative">
@@ -88,7 +108,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={cancelChanges}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <X className="h-5 w-5" />
@@ -108,7 +128,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                   <label className="block text-xs text-gray-500 mb-1">Data Inicial</label>
                   <input
                     type="date"
-                    value={filters.dateRange.start}
+                    value={tempFilters.dateRange.start}
                     onChange={(e) => handleDateChange('start', e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
@@ -117,7 +137,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                   <label className="block text-xs text-gray-500 mb-1">Data Final</label>
                   <input
                     type="date"
-                    value={filters.dateRange.end}
+                    value={tempFilters.dateRange.end}
                     onChange={(e) => handleDateChange('end', e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
@@ -136,7 +156,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                   <label key={consultant.id} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      checked={filters.consultantIds.includes(consultant.id)}
+                      checked={tempFilters.consultantIds.includes(consultant.id)}
                       onChange={() => handleConsultantToggle(consultant.id)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -157,7 +177,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                   <label key={campaign.id} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      checked={filters.campaignIds.includes(campaign.id)}
+                      checked={tempFilters.campaignIds.includes(campaign.id)}
                       onChange={() => handleCampaignToggle(campaign.id)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -175,12 +195,20 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
             >
               Limpar Filtros
             </button>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Aplicar
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={cancelChanges}
+                className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={applyFilters}
+                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Aplicar
+              </button>
+            </div>
           </div>
         </div>
       )}

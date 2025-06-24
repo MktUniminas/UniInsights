@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { ConsultantTable } from '../components/ConsultantTable';
 import { FeedbackModal } from '../components/FeedbackModal';
 import { FilterPanel } from '../components/FilterPanel';
-import { mockConsultants, mockCampaigns, mockFeedbacks } from '../services/mockData';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { ErrorMessage } from '../components/ErrorMessage';
+import { useConsultants, useCampaigns } from '../hooks/useApi';
 import { FilterState, Feedback } from '../types';
 
 export const ConsultantsPage: React.FC = () => {
@@ -12,7 +14,20 @@ export const ConsultantsPage: React.FC = () => {
     campaignIds: []
   });
   const [selectedConsultant, setSelectedConsultant] = useState<string | null>(null);
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>(mockFeedbacks);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+
+  const { 
+    data: consultants, 
+    loading: consultantsLoading, 
+    error: consultantsError,
+    refetch: refetchConsultants 
+  } = useConsultants(true);
+
+  const { 
+    data: campaigns, 
+    loading: campaignsLoading, 
+    error: campaignsError 
+  } = useCampaigns(false);
 
   const handleFeedback = (consultantId: string) => {
     setSelectedConsultant(consultantId);
@@ -38,7 +53,20 @@ export const ConsultantsPage: React.FC = () => {
     setFeedbacks(prev => [newFeedback, ...prev]);
   };
 
-  const selectedConsultantData = mockConsultants.find(c => c.id === selectedConsultant);
+  const selectedConsultantData = consultants?.find(c => c.id === selectedConsultant);
+
+  if (consultantsLoading) {
+    return <LoadingSpinner message="Carregando dados dos consultores..." />;
+  }
+
+  if (consultantsError) {
+    return (
+      <ErrorMessage 
+        message="Erro ao carregar dados dos consultores" 
+        onRetry={refetchConsultants}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -51,14 +79,14 @@ export const ConsultantsPage: React.FC = () => {
         <FilterPanel
           filters={filters}
           onFiltersChange={setFilters}
-          consultants={mockConsultants}
-          campaigns={mockCampaigns}
+          consultants={consultants || []}
+          campaigns={campaigns || []}
           isAdmin={true}
         />
       </div>
 
       <ConsultantTable 
-        consultants={mockConsultants} 
+        consultants={consultants || []} 
         onFeedback={handleFeedback}
         isAdmin={true}
       />

@@ -7,4 +7,27 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['lucide-react']
+        }
+      }
+    }
+  },
+  server: {
+    proxy: {
+      '/api': {
+        target: process.env.NODE_ENV === 'production' 
+          ? 'https://your-vercel-app.vercel.app'
+          : 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 });
