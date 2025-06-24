@@ -9,6 +9,7 @@ import { CampaignsPage } from './pages/CampaignsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { GoalsPage } from './pages/GoalsPage';
 import { PerformancePage } from './pages/PerformancePage';
+import { SettingsPage } from './pages/SettingsPage';
 import { AdminPage, UserPage } from './types';
 
 function App() {
@@ -18,7 +19,10 @@ function App() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando sistema...</p>
+        </div>
       </div>
     );
   }
@@ -39,7 +43,7 @@ function App() {
         case 'analytics':
           return <AnalyticsPage />;
         case 'settings':
-          return <div className="text-center py-8"><p className="text-gray-600">Página de configurações em desenvolvimento</p></div>;
+          return <SettingsPage />;
         default:
           return <AdminDashboard />;
       }

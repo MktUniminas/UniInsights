@@ -19,6 +19,7 @@ export const LoginForm: React.FC = () => {
     if (!success) {
       setError('Email ou senha incorretos');
     }
+    
     setLoading(false);
   };
 

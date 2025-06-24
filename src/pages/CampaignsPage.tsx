@@ -1,30 +1,29 @@
 import React, { useState } from 'react';
-import { Target, Edit3, Save, X, Plus, DollarSign, Users, TrendingUp } from 'lucide-react';
+import { Target, Edit3, Save, X, DollarSign, Users, TrendingUp, RefreshCw } from 'lucide-react';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { ErrorMessage } from '../components/ErrorMessage';
+import { useCampaigns } from '../hooks/useApi';
 import { Campaign } from '../types';
-import { mockCampaigns } from '../services/mockData';
 
 export const CampaignsPage: React.FC = () => {
-  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ costPerLead: number }>({ costPerLead: 0 });
 
+  const { 
+    data: campaigns, 
+    loading, 
+    error, 
+    refetch 
+  } = useCampaigns(true);
+
   const handleEdit = (campaign: Campaign) => {
     setEditingId(campaign.id);
-    setEditValues({ costPerLead: campaign.costPerLead });
+    setEditValues({ costPerLead: campaign.costPerLead || 0 });
   };
 
   const handleSave = (campaignId: string) => {
-    setCampaigns(prev => 
-      prev.map(campaign => 
-        campaign.id === campaignId 
-          ? { 
-              ...campaign, 
-              costPerLead: editValues.costPerLead,
-              totalInvestment: editValues.costPerLead * campaign.totalDeals
-            }
-          : campaign
-      )
-    );
+    // In a real implementation, this would call an API to update the campaign
+    console.log('Updating campaign:', campaignId, editValues);
     setEditingId(null);
   };
 
@@ -41,20 +40,42 @@ export const CampaignsPage: React.FC = () => {
   };
 
   const calculateROAS = (campaign: Campaign) => {
-    if (campaign.totalInvestment === 0) return 0;
-    // Aqui você calcularia a receita real da campanha baseada nos negócios ganhos
-    // Por simplicidade, vamos usar um valor estimado
-    const estimatedRevenue = campaign.totalDeals * 15000; // Valor médio por negócio
+    if (!campaign.totalInvestment || campaign.totalInvestment === 0) return 0;
+    const estimatedRevenue = (campaign.wonDeals || 0) * 15000; // Average deal value
     return estimatedRevenue / campaign.totalInvestment;
   };
+
+  if (loading) {
+    return <LoadingSpinner message="Carregando dados das campanhas..." />;
+  }
+
+  if (error) {
+    return (
+      <ErrorMessage 
+        message="Erro ao carregar dados das campanhas" 
+        onRetry={refetch}
+      />
+    );
+  }
+
+  const campaignsList = campaigns || [];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Gestão de Campanhas</h3>
-          <p className="text-gray-600 mt-1">Configure o custo por lead de cada campanha para cálculo preciso do ROAS</p>
+          <p className="text-gray-600 mt-1">Gerencie o custo por lead e acompanhe o desempenho</p>
         </div>
+        
+        <button
+          onClick={refetch}
+          disabled={loading}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <span>Atualizar</span>
+        </button>
       </div>
 
       {/* Summary Cards */}
@@ -63,7 +84,7 @@ export const CampaignsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total de Campanhas</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">{campaigns.length}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">{campaignsList.length}</p>
             </div>
             <div className="p-3 bg-blue-100 rounded-lg">
               <Target className="h-6 w-6 text-blue-600" />
@@ -76,7 +97,7 @@ export const CampaignsPage: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Investimento Total</p>
               <p className="text-2xl font-bold text-gray-900 mt-2">
-                {formatCurrency(campaigns.reduce((sum, c) => sum + c.totalInvestment, 0))}
+                {formatCurrency(campaignsList.reduce((sum, c) => sum + (c.totalInvestment || 0), 0))}
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-lg">
@@ -90,7 +111,7 @@ export const CampaignsPage: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Total de Leads</p>
               <p className="text-2xl font-bold text-gray-900 mt-2">
-                {campaigns.reduce((sum, c) => sum + c.totalLeads, 0)}
+                {campaignsList.reduce((sum, c) => sum + (c.totalLeads || 0), 0)}
               </p>
             </div>
             <div className="p-3 bg-purple-100 rounded-lg">
@@ -104,7 +125,7 @@ export const CampaignsPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h4 className="text-lg font-semibold text-gray-900">Campanhas Ativas</h4>
-          <p className="text-sm text-gray-600">Gerencie o custo por lead e acompanhe o desempenho</p>
+          <p className="text-sm text-gray-600">Dados atualizados em tempo real do CRM</p>
         </div>
 
         <div className="overflow-x-auto">
@@ -138,14 +159,19 @@ export const CampaignsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {campaigns.map((campaign) => (
+              {campaignsList.map((campaign) => (
                 <tr key={campaign.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{campaign.name}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {campaign.source}
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      campaign.source === 'Google Ads' ? 'bg-blue-100 text-blue-800' :
+                      campaign.source === 'Facebook' ? 'bg-blue-100 text-blue-800' :
+                      campaign.source === 'LinkedIn' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {campaign.source || 'Outros'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -154,22 +180,23 @@ export const CampaignsPage: React.FC = () => {
                         type="number"
                         value={editValues.costPerLead}
                         onChange={(e) => setEditValues({ costPerLead: Number(e.target.value) })}
-                        className="w-24 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="0"
+                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     ) : (
-                      <div className="text-sm text-gray-900">{formatCurrency(campaign.costPerLead)}</div>
+                      <div className="text-sm text-gray-900">
+                        {formatCurrency(campaign.costPerLead || 0)}
+                      </div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{campaign.totalLeads}</div>
+                    <div className="text-sm text-gray-900">{campaign.totalLeads || 0}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{campaign.totalDeals}</div>
+                    <div className="text-sm text-gray-900">{campaign.totalDeals || 0}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {formatCurrency(campaign.totalInvestment)}
+                      {formatCurrency(campaign.totalInvestment || 0)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -185,17 +212,15 @@ export const CampaignsPage: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => handleSave(campaign.id)}
-                          className="flex items-center space-x-1 text-green-600 hover:text-green-700 transition-colors"
+                          className="text-green-600 hover:text-green-700"
                         >
                           <Save className="h-4 w-4" />
-                          <span className="text-sm">Salvar</span>
                         </button>
                         <button
                           onClick={handleCancel}
-                          className="flex items-center space-x-1 text-gray-600 hover:text-gray-700 transition-colors"
+                          className="text-gray-600 hover:text-gray-700"
                         >
                           <X className="h-4 w-4" />
-                          <span className="text-sm">Cancelar</span>
                         </button>
                       </div>
                     ) : (
@@ -215,14 +240,14 @@ export const CampaignsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ROAS Calculation Info */}
-      <div className="bg-blue-50 rounded-lg p-6">
-        <h4 className="text-sm font-medium text-blue-900 mb-2">Como calculamos o ROAS</h4>
-        <div className="text-xs text-blue-800 space-y-1">
+      {/* Como calculamos o ROAS */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h4 className="text-sm font-medium text-blue-900 mb-3">Como calculamos o ROAS</h4>
+        <div className="text-sm text-blue-800 space-y-2">
           <p><strong>ROAS = Faturamento Total ÷ Investimento Total</strong></p>
-          <p>• <strong>Faturamento Total:</strong> Soma de todos os negócios ganhos da campanha (integração CRM)</p>
-          <p>• <strong>Investimento Total:</strong> Quantidade de Negócios × Custo por Lead da campanha</p>
-          <p>• <strong>Exemplo:</strong> Se uma campanha gerou R$ 45.000 em vendas com investimento de R$ 3.825, o ROAS é 11.76x</p>
+          <p><strong>• Faturamento Total:</strong> Soma de todos os negócios ganhos da campanha (integração CRM)</p>
+          <p><strong>• Investimento Total:</strong> Quantidade de Negócios × Custo por Lead da campanha</p>
+          <p><strong>• Exemplo:</strong> Se uma campanha gerou R$ 45.000 em vendas com investimento de R$ 3.825, o ROAS é 11.76x</p>
         </div>
       </div>
     </div>

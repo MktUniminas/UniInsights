@@ -17,7 +17,32 @@ export const ConsultantTable: React.FC<ConsultantTableProps> = ({
   const [sortBy, setSortBy] = useState<'revenue' | 'deals' | 'conversion' | 'roas'>('revenue');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const sortedConsultants = [...consultants].sort((a, b) => {
+  // Get saved CPL from localStorage for ROAS calculation
+  const costPerLead = (() => {
+    const saved = localStorage.getItem('dashboard_cost_per_lead');
+    return saved ? parseFloat(saved) : 0;
+  })();
+
+  // Calculate ROAS for each consultant using saved CPL and ALL DEALS from consultant
+  const consultantsWithROAS = consultants.map(consultant => {
+    // Para o ROAS individual: Faturamento ÷ (TODOS os negócios do consultor × CPL)
+    // Vamos estimar o total de negócios do consultor baseado na taxa de conversão
+    const estimatedTotalDeals = consultant.conversionRate > 0 
+      ? Math.round(consultant.totalDeals / (consultant.conversionRate / 100))
+      : consultant.totalDeals;
+    
+    const investment = estimatedTotalDeals * costPerLead;
+    const roas = investment > 0 ? consultant.totalRevenue / investment : 0;
+    
+    return {
+      ...consultant,
+      calculatedROAS: roas,
+      investment,
+      estimatedTotalDeals
+    };
+  });
+
+  const sortedConsultants = [...consultantsWithROAS].sort((a, b) => {
     let aValue: number, bValue: number;
     
     switch (sortBy) {
@@ -34,8 +59,8 @@ export const ConsultantTable: React.FC<ConsultantTableProps> = ({
         bValue = b.conversionRate;
         break;
       case 'roas':
-        aValue = a.roas;
-        bValue = b.roas;
+        aValue = a.calculatedROAS;
+        bValue = b.calculatedROAS;
         break;
       default:
         aValue = a.totalRevenue;
@@ -78,6 +103,13 @@ export const ConsultantTable: React.FC<ConsultantTableProps> = ({
     if (level >= 5) return 'bg-purple-100 text-purple-800';
     if (level >= 3) return 'bg-blue-100 text-blue-800';
     return 'bg-gray-100 text-gray-800';
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
   };
 
   const SortButton: React.FC<{ field: 'revenue' | 'deals' | 'conversion' | 'roas', children: React.ReactNode }> = ({ field, children }) => (
@@ -136,9 +168,9 @@ export const ConsultantTable: React.FC<ConsultantTableProps> = ({
               <tr key={consultant.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center space-x-2">
-                    {getRankIcon(consultant.rank)}
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRankBadge(consultant.rank)}`}>
-                      #{consultant.rank}
+                    {getRankIcon(index + 1)}
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRankBadge(index + 1)}`}>
+                      #{index + 1}
                     </span>
                   </div>
                 </td>
@@ -157,7 +189,7 @@ export const ConsultantTable: React.FC<ConsultantTableProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
-                    R$ {consultant.totalRevenue.toLocaleString('pt-BR')}
+                    {formatCurrency(consultant.totalRevenue)}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -171,7 +203,7 @@ export const ConsultantTable: React.FC<ConsultantTableProps> = ({
                     <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2 w-16">
                       <div
                         className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${consultant.conversionRate}%` }}
+                        style={{ width: `${Math.min(consultant.conversionRate, 100)}%` }}
                       ></div>
                     </div>
                     <span className="text-sm font-medium text-gray-900">
@@ -181,7 +213,7 @@ export const ConsultantTable: React.FC<ConsultantTableProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
-                    {consultant.roas.toFixed(2)}x
+                    {costPerLead > 0 ? `${consultant.calculatedROAS.toFixed(2)}x` : 'Configure CPL'}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -234,6 +266,20 @@ export const ConsultantTable: React.FC<ConsultantTableProps> = ({
           <p className="text-xs text-gray-500 mt-2">
             Mostrando {displayCount} de {consultants.length} consultores
           </p>
+        </div>
+      )}
+
+      {/* ROAS Calculation Info */}
+      {costPerLead > 0 && (
+        <div className="px-6 py-4 bg-purple-50 border-t border-purple-200">
+          <h4 className="text-sm font-medium text-purple-900 mb-2">Como calculamos o ROAS individual</h4>
+          <div className="text-xs text-purple-800 space-y-1">
+            <p><strong>ROAS = Faturamento do Consultor ÷ Investimento do Consultor</strong></p>
+            <p>• <strong>Faturamento:</strong> Soma dos negócios ganhos pelo consultor</p>
+            <p>• <strong>Investimento:</strong> TODOS os negócios do consultor × Custo por Lead ({formatCurrency(costPerLead)})</p>
+            <p>• <strong>Total de negócios:</strong> Estimado com base na taxa de conversão (ganhos ÷ conversão%)</p>
+            <p className="text-purple-700 mt-2"><strong>Nota:</strong> O ROAS geral usa todos os negócios criados no sistema para calcular o investimento total.</p>
+          </div>
         </div>
       )}
     </div>

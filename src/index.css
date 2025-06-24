@@ -1,3 +1,185 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* CSS Custom Properties for Theme Customization */
+:root {
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-light: #dbeafe;
+  --color-secondary: #64748b;
+  --color-secondary-hover: #475569;
+  --color-secondary-light: #f1f5f9;
+  --color-background: #f9fafb;
+  --color-background-secondary: #f3f4f6;
+  --color-background-card: #ffffff;
+  --color-text-primary: #111827;
+  --color-text-secondary: #374151;
+  --color-text-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-border-light: #f3f4f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  --color-icon-primary: #374151;
+  --color-icon-secondary: #6b7280;
+  --color-icon-muted: #9ca3af;
+}
+
+/* Theme-aware utility classes */
+@layer utilities {
+  .bg-theme-primary {
+    background-color: var(--color-primary);
+  }
+  
+  .bg-theme-primary-hover:hover {
+    background-color: var(--color-primary-hover);
+  }
+  
+  .bg-theme-primary-light {
+    background-color: var(--color-primary-light);
+  }
+  
+  .bg-theme-background {
+    background-color: var(--color-background);
+  }
+  
+  .bg-theme-background-secondary {
+    background-color: var(--color-background-secondary);
+  }
+  
+  .bg-theme-card {
+    background-color: var(--color-background-card);
+  }
+  
+  .text-theme-primary {
+    color: var(--color-text-primary);
+  }
+  
+  .text-theme-secondary {
+    color: var(--color-text-secondary);
+  }
+  
+  .text-theme-muted {
+    color: var(--color-text-muted);
+  }
+  
+  .text-theme-accent {
+    color: var(--color-primary);
+  }
+  
+  .border-theme {
+    border-color: var(--color-border);
+  }
+  
+  .border-theme-light {
+    border-color: var(--color-border-light);
+  }
+  
+  .text-theme-success {
+    color: var(--color-success);
+  }
+  
+  .text-theme-warning {
+    color: var(--color-warning);
+  }
+  
+  .text-theme-error {
+    color: var(--color-error);
+  }
+  
+  .text-theme-info {
+    color: var(--color-info);
+  }
+  
+  .bg-theme-success {
+    background-color: var(--color-success);
+  }
+  
+  .bg-theme-warning {
+    background-color: var(--color-warning);
+  }
+  
+  .bg-theme-error {
+    background-color: var(--color-error);
+  }
+  
+  .bg-theme-info {
+    background-color: var(--color-info);
+  }
+}
+
+/* Override some Tailwind classes with theme variables */
+.bg-blue-600 {
+  background-color: var(--color-primary) !important;
+}
+
+.hover\:bg-blue-700:hover {
+  background-color: var(--color-primary-hover) !important;
+}
+
+.text-blue-600 {
+  color: var(--color-primary) !important;
+}
+
+.border-blue-500 {
+  border-color: var(--color-primary) !important;
+}
+
+.ring-blue-500 {
+  --tw-ring-color: var(--color-primary) !important;
+}
+
+.focus\:ring-blue-500:focus {
+  --tw-ring-color: var(--color-primary) !important;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Dark mode specific adjustments */
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+[data-theme="dark"] img {
+  opacity: 0.9;
+}
+
+[data-theme="dark"] .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}

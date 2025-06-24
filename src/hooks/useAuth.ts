@@ -12,17 +12,17 @@ const mockUsers: User[] = [
   },
   {
     id: 'user1',
-    name: 'Ana Silva',
-    email: 'ana.silva@company.com',
+    name: 'Ana Clara',
+    email: 'anaclarauniminas@gmail.com',
     role: 'user',
-    consultantId: 'consultant1'
+    consultantEmail: 'anaclarauniminas@gmail.com' // Email para buscar no CRM
   },
   {
     id: 'user2',
     name: 'Carlos Santos',
     email: 'carlos.santos@company.com',
     role: 'user',
-    consultantId: 'consultant2'
+    consultantEmail: 'carlos.santos@company.com'
   }
 ];
 
@@ -55,7 +55,10 @@ export const useAuth = () => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem(STORAGE_KEY);
-    window.location.reload();
+    // Clear global cache when logging out
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
   };
 
   return {
