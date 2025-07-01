@@ -103,7 +103,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+        <div className="absolute top-full left-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[80vh] overflow-hidden">
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
@@ -116,7 +116,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
             </div>
           </div>
 
-          <div className="p-4 space-y-6">
+          <div className="p-4 space-y-6 max-h-96 overflow-y-auto">
             {/* Date Range */}
             <div>
               <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-3">
@@ -172,7 +172,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                 <Target className="h-4 w-4" />
                 <span>Campanhas</span>
               </label>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-32 overflow-y-auto">
                 {campaigns.map((campaign) => (
                   <label key={campaign.id} className="flex items-center space-x-2">
                     <input

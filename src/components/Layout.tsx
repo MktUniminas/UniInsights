@@ -21,7 +21,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageCha
         onPageChange={onPageChange}
       />
       
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col ml-64">
         <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="px-6 py-4">
             <div className="flex justify-between items-center">
