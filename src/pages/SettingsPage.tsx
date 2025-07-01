@@ -284,7 +284,7 @@ export const SettingsPage: React.FC = () => {
                 <button
                   onClick={() => navigator.clipboard.writeText('https://uninsights-crm-dealupdated.com')}
                   className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                />
+                >
                   Copiar
                 </button>
               </div>
