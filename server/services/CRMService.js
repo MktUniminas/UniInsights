@@ -51,6 +51,26 @@ export class CRMService {
     );
   }
   
+  // NOVO: Buscar negócio específico por ID (para webhooks)
+  async getDealById(dealId) {
+    try {
+      console.log(`🔍 Buscando negócio específico: ${dealId}`);
+      
+      const response = await this.axiosInstance.get(`/deals/${dealId}`);
+      const deal = response.data;
+      
+      if (deal) {
+        console.log(`✅ Negócio encontrado: ${deal.name}`);
+        return deal;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`❌ Erro buscando negócio ${dealId}:`, error.message);
+      return null;
+    }
+  }
+  
   async getDeals(filters = {}) {
     try {
       console.log('Fetching deals from CRM...', filters);
@@ -101,8 +121,22 @@ export class CRMService {
         }
       }
       
+      // Para busca incremental, usar o next_page se fornecido
+      if (filters.nextPage) {
+        params.next_page = filters.nextPage;
+        console.log(`Using pagination token: ${filters.nextPage}`);
+      }
+      
+      // Para verificação de mudanças, usar updated_at_period
+      if (filters.updatedSince) {
+        params.updated_at_period = 'true';
+        params.start_date = new Date(filters.updatedSince).toISOString();
+        params.end_date = new Date().toISOString();
+        console.log(`Checking for updates since: ${params.start_date}`);
+      }
+      
       const allDeals = [];
-      let nextPage = null;
+      let nextPage = filters.nextPage || null;
       let hasMore = true;
       let pageCount = 0;
       
@@ -126,6 +160,17 @@ export class CRMService {
         nextPage = data.next_page;
         pageCount++;
         
+        // Para busca incremental, parar na primeira página se especificado
+        if (filters.incrementalSearch && pageCount === 1) {
+          break;
+        }
+        
+        // Para verificação de mudanças, buscar apenas algumas páginas
+        if (filters.updatedSince && pageCount >= 5) {
+          console.log('Limiting changes check to 5 pages for performance');
+          break;
+        }
+        
         // Prevent infinite loops
         if (allDeals.length > 10000) {
           console.warn('Reached maximum deal limit (10000). Stopping fetch.');
@@ -146,11 +191,64 @@ export class CRMService {
         console.log(`Filtered by email ${filters.consultantEmail}: ${beforeFilter} -> ${normalizedDeals.length} deals`);
       }
       
-      return normalizedDeals;
+      return {
+        deals: normalizedDeals,
+        pagination: {
+          nextPage,
+          hasMore,
+          totalFetched: allDeals.length
+        }
+      };
       
     } catch (error) {
       console.error('Error fetching deals:', error.message);
       throw new Error(`Failed to fetch deals: ${error.message}`);
+    }
+  }
+  
+  // Buscar apenas negócios novos usando paginação
+  async getNewDeals(lastNextPage) {
+    try {
+      console.log('🔍 Fetching new deals from last pagination token:', lastNextPage);
+      
+      const result = await this.getDeals({
+        nextPage: lastNextPage,
+        incrementalSearch: true // Flag para buscar apenas uma página
+      });
+      
+      console.log(`📈 Found ${result.deals.length} new deals`);
+      return result;
+    } catch (error) {
+      console.error('Error fetching new deals:', error.message);
+      throw error;
+    }
+  }
+  
+  // NOVA IMPLEMENTAÇÃO: Verificar mudanças usando updated_at
+  async getUpdatedDeals(lastCheckTimestamp) {
+    try {
+      console.log(`🔄 Checking for deals updated since: ${new Date(lastCheckTimestamp).toISOString()}`);
+      
+      const result = await this.getDeals({
+        updatedSince: lastCheckTimestamp,
+        incrementalSearch: false // Buscar várias páginas se necessário
+      });
+      
+      // Filtrar apenas deals que realmente foram atualizados após o timestamp
+      const updatedDeals = result.deals.filter(deal => {
+        const dealUpdatedAt = new Date(deal.updatedAt).getTime();
+        return dealUpdatedAt > lastCheckTimestamp;
+      });
+      
+      console.log(`📝 Found ${updatedDeals.length} updated deals out of ${result.deals.length} total`);
+      
+      return {
+        deals: updatedDeals,
+        pagination: result.pagination
+      };
+    } catch (error) {
+      console.error('Error fetching updated deals:', error.message);
+      throw error;
     }
   }
   
@@ -218,7 +316,7 @@ export class CRMService {
       campaignId: deal.campaign?.id,
       campaignName: deal.campaign?.name,
       createdAt: deal.created_at,
-      updatedAt: deal.updated_at,
+      updatedAt: deal.updated_at, // IMPORTANTE: Incluir updated_at
       closedAt: deal.closed_at,
       lossReason: deal.deal_lost_reason?.name,
       dealStage: deal.deal_stage?.name,

@@ -35,7 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin, currentPage, onPageCh
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
 
   return (
-    <div className="w-64 bg-white shadow-sm border-r border-gray-200 h-full">
+    <div className="fixed left-0 top-0 w-64 bg-white shadow-sm border-r border-gray-200 h-screen flex flex-col">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-blue-600 rounded-lg">
@@ -52,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin, currentPage, onPageCh
         </div>
       </div>
 
-      <nav className="p-4">
+      <nav className="flex-1 p-4">
         <ul className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -76,6 +76,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin, currentPage, onPageCh
           })}
         </ul>
       </nav>
+
+      {/* Copyright no final da sidebar */}
+      <div className="p-4 border-t border-gray-200">
+        <p className="text-xs text-gray-500 text-center">
+          Uni Insights Copyright
+        </p>
+      </div>
     </div>
   );
 };

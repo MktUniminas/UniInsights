@@ -14,7 +14,7 @@ interface GlobalCacheState {
 let globalCache: GlobalCacheState = {};
 let cacheListeners: Set<() => void> = new Set();
 
-// Auto-refresh interval (10 seconds)
+// Auto-refresh interval (5 seconds - mais frequente para detectar mudanças)
 let refreshInterval: NodeJS.Timeout | null = null;
 
 const notifyListeners = () => {
@@ -96,7 +96,7 @@ export const useGlobalCache = () => {
         if (hasExpired) {
           notifyListeners();
         }
-      }, 10000); // Check every 10 seconds
+      }, 5000); // Check every 5 seconds - mais frequente
     }
 
     return () => {
@@ -116,7 +116,7 @@ export const useGlobalCache = () => {
   };
 };
 
-// Hook for API calls with global cache
+// Hook for API calls with global cache - OTIMIZADO
 export const useApiWithCache = <T>(
   key: string,
   apiCall: () => Promise<{ success: boolean; data: T; error?: string }>,
@@ -132,7 +132,7 @@ export const useApiWithCache = <T>(
   const [data, setData] = useState<T | null>(cachedData);
 
   const fetchData = useCallback(async (forceRefresh = false) => {
-    // If we have cached data and not forcing refresh, don't fetch
+    // Se temos dados em cache e não estamos forçando refresh, usar cache
     if (!forceRefresh && cachedData) {
       setData(cachedData);
       return;
@@ -157,18 +157,19 @@ export const useApiWithCache = <T>(
     }
   }, [key, apiCall, setCache, ttlMinutes, cachedData]);
 
-  // Only fetch if we don't have cached data
+  // Fetch inicial apenas se não temos dados em cache
   useEffect(() => {
     if (!cachedData) {
       fetchData();
     }
   }, dependencies);
 
-  // Update data when cache changes
+  // Update data when cache changes (para detectar atualizações incrementais)
   useEffect(() => {
     const newCachedData = getCache<T>(key);
-    if (newCachedData && newCachedData !== data) {
+    if (newCachedData && JSON.stringify(newCachedData) !== JSON.stringify(data)) {
       setData(newCachedData);
+      console.log(`🔄 Cache updated for ${key}`);
     }
   }, [key, getCache, data]);
 
