@@ -92,21 +92,6 @@ export const LoginForm: React.FC = () => {
             )}
           </button>
         </form>
-
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-          <p className="text-sm font-medium text-gray-700 mb-2">Contas de demonstração:</p>
-          <div className="space-y-2 text-xs text-gray-600">
-            <div>
-              <strong>Admin:</strong> admin@company.com
-            </div>
-            <div>
-              <strong>Usuário:</strong> ana.silva@company.com
-            </div>
-            <div>
-              <strong>Senha:</strong> demo123
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
