@@ -82,10 +82,7 @@ export class CRMService {
       
       // Apply date filters
       if (filters.startDate && filters.endDate) {
-        params.created_at_period = 'true';
-        params.start_date = new Date(filters.startDate).toISOString();
-        params.end_date = new Date(filters.endDate).toISOString();
-        console.log(`Applying date filter: ${params.start_date} to ${params.end_date}`);
+        console.log(`⚙️ Ignorando filtro de data na API. O filtro será aplicado no código: ${filters.startDate} a ${filters.endDate}`);
       }
       
       // Apply consultant filters
