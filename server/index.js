@@ -177,7 +177,7 @@ app.get('/api/dashboard/kpis', asyncHandler(async (req, res) => {
     const faturamento = ganhos.reduce((acc, d) => acc + toNumber(d.value), 0);
     const ticketMedio = ganhos.length ? +(faturamento / ganhos.length).toFixed(2) : 0;
 
-   // 8) KPIs finais
+    // 📈 8. KPIs calculadas com precisão
     const kpis = {
       periodo: `${startStr} a ${endStr}`,
       negociosCriados: deals.length,
@@ -191,23 +191,23 @@ app.get('/api/dashboard/kpis', asyncHandler(async (req, res) => {
 
     console.log('✅ KPIs Calculadas:', kpis);
 
-    // ⚙️ 9) Processar dados localmente (sem afetar o dataProcessor global)
-    const processedKpis = {
-      dealsCreated: deals.length,
-      dealsWon: ganhos.length,
-      dealsLost: perdidos.length,
-      totalRevenue: +faturamento.toFixed(2),
-      averageTicket: ticketMedio,
-      conversionRate: kpis.taxaConversao,
-    };
+    // ⚙️ 9. Processar dados com o dataProcessor (compatível com o front)
+    const processedKpis = dataProcessor.calculateKPIs(deals);
 
-    // 🔁 10) Combinar
+    // 🔁 10. Combinar as KPIs manuais com as do processador
     const finalKpis = {
       ...processedKpis,
+      negociosCriados: kpis.negociosCriados,
+      negociosGanhos: kpis.negociosGanhos,
+      negociosPerdidos: kpis.negociosPerdidos,
+      negociosEmAndamento: kpis.negociosEmAndamento,
+      faturamentoTotal: kpis.faturamentoTotal,
+      ticketMedio: kpis.ticketMedio,
+      taxaConversao: kpis.taxaConversao,
       periodo: kpis.periodo
     };
 
-    // 🧾 11) Resposta
+    // 🧾 11. Retornar no formato esperado pelo frontend
     res.json({
       success: true,
       data: finalKpis,
@@ -229,115 +229,70 @@ app.get('/api/dashboard/kpis', asyncHandler(async (req, res) => {
 // Consultants data
 app.get('/api/consultants', asyncHandler(async (req, res) => {
   const { includePerformance = 'true', startDate, endDate } = req.query;
-
+  
   try {
-    // 🔹 Define o período (mês atual se não for informado)
-    const dateRange = (startDate && endDate)
-      ? { startDate, endDate }
-      : getCurrentMonthRange();
-
-    const startStr = dateRange.startDate;
-    const endStr = dateRange.endDate;
-
-    console.log(`📅 Consultores - período: ${startStr} a ${endStr}`);
-
-    // 🔹 Busca usuários
-    let users = cacheManager.get('users_all');
-    if (!users) {
-      users = await crmService.getUsers();
-      cacheManager.set('users_all', users, 3600);
-    }
-
-    let consultantsData = [];
-
-    if (includePerformance === 'true') {
-      // 🔹 Busca negócios (sem filtro na API — filtraremos manualmente)
-      const { deals: rawDeals = [] } = await crmService.getDeals();
-      console.log(`📦 Total de negócios recebidos do CRM: ${rawDeals.length}`);
-
-      // 🔹 Deduplicação por ID
-      const uniqueDeals = Array.from(
-        new Map(rawDeals.map(d => [d.id, d])).values()
-      );
-
-      // 🔹 Filtro por data de criação (somente do mês)
-      const inCreationWindow = (deal) => {
-        const createdStr = (deal.createdAt || '').slice(0, 10);
-        return createdStr >= startStr && createdStr <= endStr;
-      };
-
-      const deals = uniqueDeals.filter(inCreationWindow);
-      console.log(`📊 Negócios no período (${startStr} a ${endStr}): ${deals.length}`);
-
-      // 🔹 Agrupamento e cálculo por consultor
-      const consultantMap = {};
-
-      for (const deal of deals) {
-        const id = deal.consultantId;
-        if (!id) continue;
-
-        if (!consultantMap[id]) {
-          consultantMap[id] = {
-            id,
-            name: deal.consultantName || 'Sem nome',
-            email: deal.consultantEmail || 'Sem e-mail',
-            ganhos: 0,
-            perdidos: 0,
-            total: 0,
-            faturamento: 0
-          };
-        }
-
-        consultantMap[id].total++;
-
-        // Status
-        const isWon = deal.stage === 'won' || /ganho|vendid|fechad/i.test(deal.dealStage || '');
-        const isLost = deal.stage === 'lost' || /perdid|cancelad/i.test(deal.dealStage || '');
-
-        if (isWon) {
-          consultantMap[id].ganhos++;
-          consultantMap[id].faturamento += Number(deal.value) || 0;
-        } else if (isLost) {
-          consultantMap[id].perdidos++;
-        }
+    const cacheKey = `consultants_${includePerformance}_${startDate || ''}_${endDate || ''}`;
+    let cachedData = cacheManager.get(cacheKey);
+    
+    if (!cachedData) {
+      // Tentar usar dados do cache primeiro
+      let users = cacheManager.get('users_all');
+      
+      if (!users) {
+        users = await crmService.getUsers();
+        cacheManager.set('users_all', users, 3600);
       }
-
-      // 🔹 Converte em lista e calcula taxa de conversão
-      consultantsData = Object.values(consultantMap).map(c => ({
-        id: c.id,
-        name: c.name,
-        email: c.email,
-        negociosGanhos: c.ganhos,
-        negociosPerdidos: c.perdidos,
-        negociosTotais: c.total,
-        receitaTotal: +c.faturamento.toFixed(2),
-        taxaConversao: c.total ? +((c.ganhos / c.total) * 100).toFixed(2) : 0
-      }));
-
-      // 🔹 Ordenar por faturamento (ranking)
-      consultantsData.sort((a, b) => b.receitaTotal - a.receitaTotal);
-
-      console.log(`✅ Ranking calculado (${consultantsData.length} consultores).`);
-    } else {
-      // 🔹 Retorna apenas dados básicos
-      consultantsData = users.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        active: user.active
-      }));
+      
+      if (includePerformance === 'true') {
+        // Use date range if provided, otherwise use current month
+        let dateRange = {};
+        if (startDate && endDate) {
+          dateRange = { startDate, endDate };
+        } else {
+          dateRange = getCurrentMonthRange();
+        }
+        
+        // Tentar usar deals do cache
+        let deals = cacheManager.get('deals_all');
+        
+        if (!deals) {
+          const dealsResult = await crmService.getDeals({
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate
+          });
+          deals = dealsResult.deals;
+        } else {
+          // Filtrar por data se necessário
+          if (startDate && endDate) {
+            deals = deals.filter(deal => {
+              const dealDate = new Date(deal.createdAt);
+              return dealDate >= new Date(startDate) && dealDate <= new Date(endDate);
+            });
+          }
+        }
+        
+        cachedData = dataProcessor.calculateConsultantPerformance(users, deals);
+      } else {
+        cachedData = users.map(user => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          active: user.active
+        }));
+      }
+      
+      // Cache for 10 minutes
+      cacheManager.set(cacheKey, cachedData, 600);
     }
-
-    // 🔁 Retorno final
+    
     res.json({
       success: true,
-      data: consultantsData,
+      data: cachedData,
       timestamp: new Date().toISOString(),
-      fromCache: false
+      fromCache: true
     });
-
   } catch (error) {
-    console.error('❌ Erro ao buscar consultores:', error);
+    console.error('Error fetching consultants:', error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -345,7 +300,6 @@ app.get('/api/consultants', asyncHandler(async (req, res) => {
     });
   }
 }));
-
 
 // Campaigns data
 app.get('/api/campaigns', asyncHandler(async (req, res) => {
