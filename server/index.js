@@ -60,7 +60,7 @@ const getCurrentMonthRange = () => {
   };
 };
 
-// ====================== Webhooks ======================
+// ====================== Webhooks =============================
 app.post('/webhooks/deal-created', asyncHandler(async (req, res) => {
   console.log('🔔 Webhook deal_created recebido');
   try {
