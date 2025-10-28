@@ -225,6 +225,7 @@ app.get('/api/dashboard/kpis', asyncHandler(async (req, res) => {
   }
 }));
 
+
 // Consultants data
 app.get('/api/consultants', asyncHandler(async (req, res) => {
   const { includePerformance = 'true', startDate, endDate } = req.query;
