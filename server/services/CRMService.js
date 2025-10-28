@@ -74,123 +74,116 @@ export class CRMService {
   async getDeals(filters = {}) {
     try {
       console.log('Fetching deals from CRM...', filters);
-      
+
       const params = {
         deal_pipeline_id: this.config.pipelineId,
         limit: 200
       };
-      
-      // Apply date filters
-      if (filters.startDate && filters.endDate) {
+
+      /**
+       * 🧩 1. Filtro por DATA DE CRIAÇÃO (RD → created_at_period)
+       */
+      if (filters.creationStart && filters.creationEnd) {
         params.created_at_period = 'true';
-        params.start_date = new Date(filters.startDate).toISOString();
-        params.end_date = new Date(filters.endDate).toISOString();
-        console.log(`Applying date filter: ${params.start_date} to ${params.end_date}`);
+        params.start_date = new Date(filters.creationStart).toISOString();
+        params.end_date = new Date(filters.creationEnd).toISOString();
+        console.log(`📅 Filtrando por criação: ${params.start_date} → ${params.end_date}`);
       }
-      
-      // Apply consultant filters
+
+      /**
+       * 🧩 2. Filtro por DATA DE FECHAMENTO (RD → closed_at_period)
+       */
+      if (filters.closureStart && filters.closureEnd) {
+        params.closed_at_period = 'true';
+        params.start_date = new Date(filters.closureStart).toISOString();
+        params.end_date = new Date(filters.closureEnd).toISOString();
+        console.log(`📅 Filtrando por fechamento: ${params.start_date} → ${params.end_date}`);
+      }
+
+      /**
+       * 🧩 3. Consultores (user_id)
+       * A RD aceita apenas um user_id por vez — se houver vários, usamos o primeiro.
+       */
       if (filters.consultantId) {
         params.user_id = filters.consultantId;
-        console.log(`Filtering by consultant ID: ${filters.consultantId}`);
+        console.log(`👤 Filtrando por consultor único: ${filters.consultantId}`);
+      } else if (filters.consultantIds && filters.consultantIds.length > 0) {
+        params.user_id = filters.consultantIds[0];
+        console.log(`👥 Filtrando por consultores: ${filters.consultantIds.join(', ')}`);
       }
-      
-      if (filters.consultantIds && filters.consultantIds.length > 0) {
-        params.user_id = filters.consultantIds.join(',');
-        console.log(`Filtering by consultant IDs: ${filters.consultantIds.join(',')}`);
-      }
-      
-      // Apply campaign filters
+
+      /**
+       * 🧩 4. Campanhas (campaign_id)
+       */
       if (filters.campaignId) {
         params.campaign_id = filters.campaignId;
-        console.log(`Filtering by campaign ID: ${filters.campaignId}`);
+        console.log(`🏷️ Filtrando por campanha única: ${filters.campaignId}`);
+      } else if (filters.campaignIds && filters.campaignIds.length > 0) {
+        params.campaign_id = filters.campaignIds[0];
+        console.log(`🏷️ Filtrando por campanhas: ${filters.campaignIds.join(', ')}`);
       }
-      
-      if (filters.campaignIds && filters.campaignIds.length > 0) {
-        params.campaign_id = filters.campaignIds.join(',');
-        console.log(`Filtering by campaign IDs: ${filters.campaignIds.join(',')}`);
-      }
-      
-      // IMPORTANT: Do NOT apply stage filter automatically
-      // Only apply when explicitly requested
-      if (filters.stage) {
-        console.log('Applying stage filter:', filters.stage);
-        if (filters.stage === 'won') {
-          params.win = 'true';
-        } else if (filters.stage === 'lost') {
-          params.win = 'false';
-        }
-      }
-      
-      // Para busca incremental, usar o next_page se fornecido
+
+      /**
+       * 🔁 Paginação
+       */
       if (filters.nextPage) {
         params.next_page = filters.nextPage;
-        console.log(`Using pagination token: ${filters.nextPage}`);
+        console.log(`➡️ Usando paginação: ${filters.nextPage}`);
       }
-      
-      // Para verificação de mudanças, usar updated_at_period
+
+      /**
+       * 🕓 Atualizações recentes (opcional)
+       */
       if (filters.updatedSince) {
         params.updated_at_period = 'true';
         params.start_date = new Date(filters.updatedSince).toISOString();
         params.end_date = new Date().toISOString();
-        console.log(`Checking for updates since: ${params.start_date}`);
+        console.log(`🕓 Verificando atualizações desde: ${params.start_date}`);
       }
-      
+
       const allDeals = [];
       let nextPage = filters.nextPage || null;
       let hasMore = true;
       let pageCount = 0;
-      
-      while (hasMore && pageCount < 50) { // Safety limit
+
+      while (hasMore && pageCount < 50) {
         const requestParams = { ...params };
-        if (nextPage) {
-          requestParams.next_page = nextPage;
-        }
-        
-        console.log(`Fetching page ${pageCount + 1} with params:`, requestParams);
-        
+        if (nextPage) requestParams.next_page = nextPage;
+
+        console.log(`📨 Página ${pageCount + 1} - params:`, requestParams);
+
         const response = await this.axiosInstance.get('/deals', { params: requestParams });
         const data = response.data;
-        
+
         if (data.deals && Array.isArray(data.deals)) {
           allDeals.push(...data.deals);
-          console.log(`Page ${pageCount + 1}: Fetched ${data.deals.length} deals. Total: ${allDeals.length}`);
+          console.log(`📄 Página ${pageCount + 1}: ${data.deals.length} negócios (total ${allDeals.length})`);
         }
-        
+
         hasMore = data.has_more && data.next_page;
         nextPage = data.next_page;
         pageCount++;
-        
-        // Para busca incremental, parar na primeira página se especificado
-        if (filters.incrementalSearch && pageCount === 1) {
-          break;
-        }
-        
-        // Para verificação de mudanças, buscar apenas algumas páginas
-        if (filters.updatedSince && pageCount >= 5) {
-          console.log('Limiting changes check to 5 pages for performance');
-          break;
-        }
-        
-        // Prevent infinite loops
+
         if (allDeals.length > 10000) {
-          console.warn('Reached maximum deal limit (10000). Stopping fetch.');
+          console.warn('⚠️ Máximo de 10.000 negócios atingido, interrompendo busca.');
           break;
         }
       }
-      
-      console.log(`✅ Total deals fetched: ${allDeals.length} in ${pageCount} pages`);
-      
+
+      console.log(`✅ Total final: ${allDeals.length} negócios em ${pageCount} páginas`);
+
       let normalizedDeals = this.normalizeDeals(allDeals);
-      
-      // Filter by consultant email if provided (post-processing)
+
+      // 🔹 Filtro opcional por e-mail de consultor
       if (filters.consultantEmail) {
-        const beforeFilter = normalizedDeals.length;
-        normalizedDeals = normalizedDeals.filter(deal => 
-          deal.consultantEmail && deal.consultantEmail.toLowerCase() === filters.consultantEmail.toLowerCase()
+        const before = normalizedDeals.length;
+        normalizedDeals = normalizedDeals.filter(d => 
+          d.consultantEmail &&
+          d.consultantEmail.toLowerCase() === filters.consultantEmail.toLowerCase()
         );
-        console.log(`Filtered by email ${filters.consultantEmail}: ${beforeFilter} -> ${normalizedDeals.length} deals`);
+        console.log(`📧 Filtro por email: ${before} → ${normalizedDeals.length}`);
       }
-      
+
       return {
         deals: normalizedDeals,
         pagination: {
@@ -199,13 +192,13 @@ export class CRMService {
           totalFetched: allDeals.length
         }
       };
-      
+
     } catch (error) {
-      console.error('Error fetching deals:', error.message);
+      console.error('❌ Erro ao buscar negócios:', error.message);
       throw new Error(`Failed to fetch deals: ${error.message}`);
     }
   }
-  
+
   // Buscar apenas negócios novos usando paginação
   async getNewDeals(lastNextPage) {
     try {
@@ -284,7 +277,7 @@ export class CRMService {
     try {
       console.log('Fetching campaigns from CRM...');
       
-      const response = await this.axiosInstance.get('/campaigns');
+      const response = await this.axiosInstance.get('/campaigns?limit=200');
       const data = response.data;
       
       let campaigns = [];

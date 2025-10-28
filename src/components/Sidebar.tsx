@@ -43,7 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin, currentPage, onPageCh
           </div>
           <div>
             <h1 className="text-lg font-semibold text-gray-900">
-              Sistema de Relatórios
+              Uni-Insights
             </h1>
             <p className="text-xs text-gray-500">
               {isAdmin ? 'Painel Admin' : 'Painel Consultor'}
@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin, currentPage, onPageCh
       {/* Copyright no final da sidebar */}
       <div className="p-4 border-t border-gray-200">
         <p className="text-xs text-gray-500 text-center">
-          Uni Insights Copyright
+          <a target='_blank' href="https://codemediatech.com.br">Code Media Tech - 2025 ©</a>
         </p>
       </div>
     </div>

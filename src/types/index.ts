@@ -71,14 +71,18 @@ export interface Goal {
 }
 
 export interface FilterState {
-  dateRange: {
+  creationDateRange: {
+    start: string;
+    end: string;
+  };
+  closureDateRange: {
     start: string;
     end: string;
   };
   consultantIds: string[];
   campaignIds: string[];
-  costPerLead?: number;
 }
+
 
 export interface Badge {
   id: string;
