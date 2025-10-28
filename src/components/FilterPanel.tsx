@@ -18,74 +18,67 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
   isAdmin
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  // Local state for temporary filter values (before applying)
   const [tempFilters, setTempFilters] = useState<FilterState>(filters);
 
-  const handleDateChange = (field: 'start' | 'end', value: string) => {
+  // ========== HANDLERS ==========
+  const handleDateChange = (
+    type: 'creation' | 'closure',
+    field: 'start' | 'end',
+    value: string
+  ) => {
     setTempFilters(prev => ({
       ...prev,
-      dateRange: {
-        ...prev.dateRange,
+      [`${type}DateRange`]: {
+        ...prev[`${type}DateRange`],
         [field]: value
       }
     }));
-    // DO NOT auto-apply filters here
   };
 
   const handleConsultantToggle = (consultantId: string) => {
     const newConsultantIds = tempFilters.consultantIds.includes(consultantId)
       ? tempFilters.consultantIds.filter(id => id !== consultantId)
       : [...tempFilters.consultantIds, consultantId];
-    
-    setTempFilters(prev => ({
-      ...prev,
-      consultantIds: newConsultantIds
-    }));
-    // DO NOT auto-apply filters here
+    setTempFilters(prev => ({ ...prev, consultantIds: newConsultantIds }));
   };
 
   const handleCampaignToggle = (campaignId: string) => {
     const newCampaignIds = tempFilters.campaignIds.includes(campaignId)
       ? tempFilters.campaignIds.filter(id => id !== campaignId)
       : [...tempFilters.campaignIds, campaignId];
-    
-    setTempFilters(prev => ({
-      ...prev,
-      campaignIds: newCampaignIds
-    }));
-    // DO NOT auto-apply filters here
+    setTempFilters(prev => ({ ...prev, campaignIds: newCampaignIds }));
   };
 
   const applyFilters = () => {
-    console.log('Applying filters:', tempFilters);
+    console.log('✅ Aplicando filtros:', tempFilters);
     onFiltersChange(tempFilters);
     setIsOpen(false);
   };
 
   const clearFilters = () => {
-    const clearedFilters = {
-      dateRange: { start: '', end: '' },
+    const clearedFilters: FilterState = {
+      creationDateRange: { start: '', end: '' },
+      closureDateRange: { start: '', end: '' },
       consultantIds: [],
-      campaignIds: [],
-      costPerLead: undefined
+      campaignIds: []
     };
     setTempFilters(clearedFilters);
     onFiltersChange(clearedFilters);
   };
 
   const cancelChanges = () => {
-    setTempFilters(filters); // Reset to current applied filters
+    setTempFilters(filters);
     setIsOpen(false);
   };
 
-  const activeFiltersCount = 
-    (filters.dateRange.start ? 1 : 0) +
-    (filters.dateRange.end ? 1 : 0) +
+  // Contador de filtros ativos
+  const activeFiltersCount =
+    (filters.creationDateRange.start ? 1 : 0) +
+    (filters.creationDateRange.end ? 1 : 0) +
+    (filters.closureDateRange.start ? 1 : 0) +
+    (filters.closureDateRange.end ? 1 : 0) +
     filters.consultantIds.length +
-    filters.campaignIds.length +
-    (filters.costPerLead ? 1 : 0);
-
-  const hasChanges = JSON.stringify(tempFilters) !== JSON.stringify(filters);
+    filters.campaignIds.length;
 
   return (
     <div className="relative">
@@ -103,7 +96,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[80vh] overflow-hidden">
+        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[80vh] overflow-hidden">
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
@@ -117,19 +110,19 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
           </div>
 
           <div className="p-4 space-y-6 max-h-96 overflow-y-auto">
-            {/* Date Range */}
+            {/* ====== Data de Criação ====== */}
             <div>
               <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-3">
                 <Calendar className="h-4 w-4" />
-                <span>Período</span>
+                <span>Data de Criação</span>
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Data Inicial</label>
                   <input
                     type="date"
-                    value={tempFilters.dateRange.start}
-                    onChange={(e) => handleDateChange('start', e.target.value)}
+                    value={tempFilters.creationDateRange.start}
+                    onChange={(e) => handleDateChange('creation', 'start', e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -137,15 +130,43 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                   <label className="block text-xs text-gray-500 mb-1">Data Final</label>
                   <input
                     type="date"
-                    value={tempFilters.dateRange.end}
-                    onChange={(e) => handleDateChange('end', e.target.value)}
+                    value={tempFilters.creationDateRange.end}
+                    onChange={(e) => handleDateChange('creation', 'end', e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Consultants */}
+            {/* ====== Data de Fechamento ====== */}
+            <div>
+              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-3">
+                <Calendar className="h-4 w-4" />
+                <span>Data de Fechamento</span>
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Data Inicial</label>
+                  <input
+                    type="date"
+                    value={tempFilters.closureDateRange.start}
+                    onChange={(e) => handleDateChange('closure', 'start', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Data Final</label>
+                  <input
+                    type="date"
+                    value={tempFilters.closureDateRange.end}
+                    onChange={(e) => handleDateChange('closure', 'end', e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ====== Consultores ====== */}
             <div>
               <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-3">
                 <User className="h-4 w-4" />
@@ -166,7 +187,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
               </div>
             </div>
 
-            {/* Campaigns */}
+            {/* ====== Campanhas ====== */}
             <div>
               <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-3">
                 <Target className="h-4 w-4" />
@@ -188,6 +209,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
             </div>
           </div>
 
+          {/* ====== Ações ====== */}
           <div className="p-4 border-t border-gray-200 flex justify-between">
             <button
               onClick={clearFilters}

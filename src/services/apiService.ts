@@ -44,66 +44,82 @@ class ApiService {
     }
   }
 
-  // Dashboard KPIs
+  // 🧮 Dashboard KPIs
   async getKPIs(filters?: {
-    startDate?: string;
-    endDate?: string;
+    // criação
+    creationStart?: string;
+    creationEnd?: string;
+    // fechamento
+    closureStart?: string;
+    closureEnd?: string;
+    // demais filtros
     consultantIds?: string[];
     campaignIds?: string[];
-    consultantEmail?: string; // NEW: Filter by consultant email
+    consultantEmail?: string;
+    forceRefresh?: boolean;
   }) {
     const params = new URLSearchParams();
-    
-    if (filters?.startDate) params.append('startDate', filters.startDate);
-    if (filters?.endDate) params.append('endDate', filters.endDate);
+
+    // criação
+    if (filters?.creationStart) params.append('creationStart', filters.creationStart);
+    if (filters?.creationEnd)   params.append('creationEnd',   filters.creationEnd);
+
+    // fechamento
+    if (filters?.closureStart) params.append('closureStart', filters.closureStart);
+    if (filters?.closureEnd)   params.append('closureEnd',   filters.closureEnd);
+
+    // demais
     if (filters?.consultantIds?.length) params.append('consultantIds', filters.consultantIds.join(','));
-    if (filters?.campaignIds?.length) params.append('campaignIds', filters.campaignIds.join(','));
-    if (filters?.consultantEmail) params.append('consultantEmail', filters.consultantEmail);
+    if (filters?.campaignIds?.length)   params.append('campaignIds',   filters.campaignIds.join(','));
+    if (filters?.consultantEmail)       params.append('consultantEmail', filters.consultantEmail);
+    if (filters?.forceRefresh)          params.append('forceRefresh', 'true');
 
     return this.request(`/dashboard/kpis?${params.toString()}`);
   }
 
-  // Consultants
+  // 👥 Consultores
   async getConsultants(includePerformance = true, filters?: {
     startDate?: string;
     endDate?: string;
+    forceRefresh?: boolean;
   }) {
     const params = new URLSearchParams();
     params.append('includePerformance', includePerformance.toString());
-    
+
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
-    
+    if (filters?.forceRefresh) params.append('forceRefresh', 'true');
+
     return this.request(`/consultants?${params.toString()}`);
   }
 
-  // Campaigns
+  // 🎯 Campanhas
   async getCampaigns(includeMetrics = true, filters?: {
     startDate?: string;
     endDate?: string;
   }) {
     const params = new URLSearchParams();
     params.append('includeMetrics', includeMetrics.toString());
-    
+
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
-    
+
     return this.request(`/campaigns?${params.toString()}`);
   }
 
-  // Deals
+  // 📦 Negócios
   async getDeals(filters?: {
     startDate?: string;
     endDate?: string;
     consultantId?: string;
-    consultantEmail?: string; // NEW: Filter by consultant email
+    consultantEmail?: string;
     campaignId?: string;
     stage?: string;
     page?: number;
     limit?: number;
   }) {
     const params = new URLSearchParams();
-    
+
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
     if (filters?.consultantId) params.append('consultantId', filters.consultantId);
@@ -116,39 +132,33 @@ class ApiService {
     return this.request(`/deals?${params.toString()}`);
   }
 
-  // Analytics
-  async getSalesPrediction(months = 3, filters?: {
-    startDate?: string;
-    endDate?: string;
-  }) {
+  // 📊 Análises
+  async getSalesPrediction(months = 3, filters?: { startDate?: string; endDate?: string }) {
     const params = new URLSearchParams();
     params.append('months', months.toString());
-    
+
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
-    
+
     return this.request(`/analytics/sales-prediction?${params.toString()}`);
   }
 
-  async getLossAnalysis(filters?: {
-    startDate?: string;
-    endDate?: string;
-  }) {
+  async getLossAnalysis(filters?: { startDate?: string; endDate?: string }) {
     const params = new URLSearchParams();
-    
+
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
 
     return this.request(`/analytics/loss-analysis?${params.toString()}`);
   }
 
-  // Goals
+  // 🎯 Metas
   async getGoals(consultantEmail?: string) {
     const params = consultantEmail ? `?consultantEmail=${consultantEmail}` : '';
     return this.request(`/goals${params}`);
   }
 
-  // Health check
+  // ❤️ Health check
   async healthCheck() {
     return this.request('/health');
   }
