@@ -37,24 +37,26 @@ export class CacheManager {
   }
   
   get(key) {
-    const item = this.cache.get(key);
+    //const item = this.cache.get(key);
     
-    if (!item) {
-      return null;
-    }
+    //if (!item) {
+      //return null;
+    //}
     
     // Check if expired
-    if (Date.now() - item.timestamp > item.ttl) {
-      this.delete(key);
-      return null;
-    }
+    //if (Date.now() - item.timestamp > item.ttl) {
+      //this.delete(key);
+      //return null;
+    //}
     
-    console.log(`Cache HIT: ${key}`);
-    return item.value;
+    //console.log(`Cache HIT: ${key}`);
+    //return item.value;
+    return undefined;
   }
   
   getMetadata(key) {
-    return this.metadata.get(key) || {};
+    //return this.metadata.get(key) || {};
+    return undefined;
   }
   
   updateMetadata(key, newMetadata) {
