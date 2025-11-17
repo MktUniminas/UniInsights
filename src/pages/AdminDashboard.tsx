@@ -80,12 +80,14 @@ export const AdminDashboard: React.FC = () => {
         campaignIds: filters.campaignIds
       };
 
+      if (hasCreationRange) {
+        params.creationStart = filters.creationDateRange.start;
+        params.creationEnd   = filters.creationDateRange.end;
+      }
+
       if (hasClosureRange) {
         params.closureStart = filters.closureDateRange.start;
-        params.closureEnd = filters.closureDateRange.end;
-      } else if (hasCreationRange) {
-        params.startDate = filters.creationDateRange.start;
-        params.endDate = filters.creationDateRange.end;
+        params.closureEnd   = filters.closureDateRange.end;
       }
 
       return apiService.getKPIs(params);

@@ -121,28 +121,37 @@ app.get('/api/dashboard/kpis', asyncHandler(async (req, res) => {
 
   try {
     // 1) Determinar período com prioridade: fechamento > criação > manual > mês atual
-    let startStr, endStr, dateType;
+    let creationStart = req.query.creationStart;
+    let creationEnd   = req.query.creationEnd;
+    let closureStart  = req.query.closureStart;
+    let closureEnd    = req.query.closureEnd;
 
-    if (req.query.closureStart && req.query.closureEnd) {
-      startStr = req.query.closureStart;
-      endStr   = req.query.closureEnd;
-      dateType = 'fechamento';
-    } else if (req.query.creationStart && req.query.creationEnd) {
-      startStr = req.query.creationStart;
-      endStr   = req.query.creationEnd;
-      dateType = 'criação';
-    } else if (startDate && endDate) {
-      startStr = startDate;
-      endStr   = endDate;
-      dateType = 'manual';
-    } else {
+    let dateType = '';
+    let startStr = '';
+    let endStr   = '';
+
+    // Fallback se nada for enviado: assume mês atual para criação
+    if (!creationStart && !creationEnd && !closureStart && !closureEnd && !startDate && !endDate) {
       const defaultRange = getCurrentMonthRange();
-      startStr = defaultRange.startDate;
-      endStr   = defaultRange.endDate;
-      dateType = 'mês atual';
+      creationStart = defaultRange.startDate;
+      creationEnd   = defaultRange.endDate;
+      dateType = 'mês atual (fallback criação)';
+    } else {
+      const tipos = [];
+      if (creationStart || creationEnd) tipos.push('criação');
+      if (closureStart || closureEnd) tipos.push('fechamento');
+      if (startDate || endDate) tipos.push('manual');
+
+      dateType = tipos.join(' + ');
     }
 
+    // Para manter compatibilidade com o crmService e o .periodo:
+    startStr = creationStart || closureStart || startDate || getCurrentMonthRange().startDate;
+    endStr   = creationEnd   || closureEnd   || endDate   || getCurrentMonthRange().endDate;
+
     console.log(`📅 KPIs - período (${dateType}): ${startStr} → ${endStr}`);
+    console.log(`→ Criação: ${creationStart || '∞'} a ${creationEnd || '∞'}`);
+    console.log(`→ Fechamento: ${closureStart || '∞'} a ${closureEnd || '∞'}`);
 
     // 2) Busca negociações no CRM com os filtros ativos
     const { deals: rawDeals = [] } = await crmService.getDeals({
