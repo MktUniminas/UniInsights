@@ -154,20 +154,46 @@ app.get('/api/dashboard/kpis', asyncHandler(async (req, res) => {
     console.log(`→ Fechamento: ${closureStart || '∞'} a ${closureEnd || '∞'}`);
 
     // 2) Busca negociações no CRM com os filtros ativos
-    const { deals: rawDeals = [] } = await crmService.getDeals({
-      startDate: startStr,
-      endDate: endStr,
+    let rawDeals = [];
 
-      consultantIds: consultantIds ? consultantIds.split(',') : undefined,
-      campaignIds: campaignIds ? campaignIds.split(',') : undefined,
-      consultantEmail: consultantEmail || undefined,
+    if (campaignIds) {
+      const ids = campaignIds.split(',');
 
-      // Enviar também marcadores de tipo de período, se vierem
-      creationStart: req.query.creationStart,
-      creationEnd: req.query.creationEnd,
-      closureStart: req.query.closureStart,
-      closureEnd: req.query.closureEnd
-    });
+      const results = await Promise.all(
+        ids.map(id => crmService.getDeals({
+          startDate: startStr,
+          endDate: endStr,
+          consultantIds: consultantIds ? consultantIds.split(',') : undefined,
+          consultantEmail: consultantEmail || undefined,
+          campaignIds: [id], // ⚠️ passa um ID por vez como array
+
+          // períodos
+          creationStart: req.query.creationStart,
+          creationEnd: req.query.creationEnd,
+          closureStart: req.query.closureStart,
+          closureEnd: req.query.closureEnd
+        }))
+      );
+
+      // Junta todos os resultados num único array
+      rawDeals = results.flatMap(res => res.deals || []);
+    } else {
+      const { deals = [] } = await crmService.getDeals({
+        startDate: startStr,
+        endDate: endStr,
+        consultantIds: consultantIds ? consultantIds.split(',') : undefined,
+        consultantEmail: consultantEmail || undefined,
+
+        // períodos
+        creationStart: req.query.creationStart,
+        creationEnd: req.query.creationEnd,
+        closureStart: req.query.closureStart,
+        closureEnd: req.query.closureEnd
+      });
+
+      rawDeals = deals;
+    }
+
 
     console.log(`📦 Total recebido do CRM (antes da limpeza): ${rawDeals.length}`);
 
